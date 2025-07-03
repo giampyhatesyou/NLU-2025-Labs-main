@@ -34,9 +34,9 @@ if __name__ == "__main__":
     if mode not in [1, 2, 3]:
         raise ValueError("Invalid mode. Please enter 1, 2 or 3.")
     # Load the dataset
-    train_raw = read_file("exam/studentID_name_surname/LM/dataset/ptb.train.txt")
-    dev_raw = read_file("exam/studentID_name_surname/LM/dataset/ptb.valid.txt")
-    test_raw = read_file("exam/studentID_name_surname/LM/dataset/ptb.test.txt")
+    train_raw = read_file("exam/258237-Giampietro-Andrea/LM/dataset/ptb.train.txt")
+    dev_raw = read_file("exam/258237-Giampietro-Andrea/LM/dataset/ptb.valid.txt")
+    test_raw = read_file("/LM/dataset/ptb.test.txt")
     # Create the vocab
     vocab = get_vocab(train_raw, special_tokens=["<pad>", "<eos>"])
     lang = Lang(train_raw, ["<pad>", "<eos>"])

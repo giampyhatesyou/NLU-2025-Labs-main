@@ -31,7 +31,7 @@ class LM_LSTM(nn.Module):
 class LM_LSTM_dropout(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size, pad_index=0, out_dropout=0.1,
                  emb_dropout=0.1, n_layers=1):
-        super(LM_LSTM, self).__init__()
+        super(LM_LSTM_dropout, self).__init__()
         # Token ids to vectors, we will better see this in the next lab
         self.embedding = nn.Embedding(output_size, emb_size, padding_idx=pad_index)
         # Pytorch's LSTM layer: https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html
