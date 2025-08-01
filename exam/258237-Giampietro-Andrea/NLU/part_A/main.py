@@ -15,10 +15,6 @@ config = {
     "patience_init": 3,
 }
 
- # IAS -> F1: 0.9262, Intent Accuracy: 0.9160
- # Model with bidirectionality -> F1: 0.9459, Intent Accuracy: 0.9507
- # Model with dropout and bidirectionality -> F1: 0.9343, Intent Accuracy: 0.9384
-
 if __name__ == "__main__":
     os.environ['CUDA_LAUNCH_BLOCKING'] = "1" # Used to report errors on CUDA side
     PAD_TOKEN = 0
@@ -104,9 +100,7 @@ if __name__ == "__main__":
         print('Intent Accuracy:', intent_test['accuracy'])
         exit(0)
 
-    elif mode != 1 or mode != 2:
-        print("Invalid choice. Defaulting to training mode.")
-    else:
+    elif mode == 1: # Training mode
         mode_choice = int(input("Enter the mode you want to use (1 for ModelIAS, 2 for bidirectional ModelIAS, 3 for ModelIAS with dropout): "))
 
         if mode_choice == 1:
@@ -165,5 +159,7 @@ if __name__ == "__main__":
         results_test, intent_test, _ = eval_loop(test_loader, criterion_slots, criterion_intents, model, lang)    
         print('Slot F1: ', results_test['total']['f'])
         print('Intent Accuracy:', intent_test['accuracy'])
-        
+    else:
+        print("Invalid mode. Please enter 1 for training or 2 for testing.")
+        exit(1)
     
