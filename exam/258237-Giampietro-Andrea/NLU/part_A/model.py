@@ -6,20 +6,21 @@ class ModelIAS(nn.Module):
     def __init__(self, hid_size, out_slot, out_int, emb_size, vocab_len, dropout, bidirectional, apply_dropout, n_layer=1, pad_index=0):        
         super(ModelIAS, self).__init__()
         
-        self.embedding = nn.Embedding(vocab_len, emb_size, padding_idx=pad_index)
-        self.utt_encoder =  nn.LSTM(
-            input_size=emb_size,
-            hidden_size=hid_size,
-            num_layers=1,
-            batch_first=True,
-            bidirectional=bidirectional
-        )
         #Flags to control dropout and bidirectional
         self.apply_dropout = apply_dropout
         self.bidirectional = bidirectional
         
+        self.embedding = nn.Embedding(vocab_len, emb_size, padding_idx=pad_index)
+        self.utt_encoder =  nn.LSTM(
+            input_size=emb_size,
+            hidden_size=hid_size,
+            num_layers=n_layer,
+            bidirectional=self.bidirectional,
+            batch_first=True
+        )
+        
         if self.apply_dropout:
-            self.apply_dropout = nn.Dropout(dropout)
+            self.dropout = nn.Dropout(dropout)
             
         if bidirectional:
             hid_size=hid_size*2
@@ -41,10 +42,10 @@ class ModelIAS(nn.Module):
 
         # Apply apply_dropout
         if self.apply_dropout:
-            utt_encoded = self.apply_dropout(utt_encoded)
+            utt_encoded = self.dropout(utt_encoded)
 
         # Get the last hidden state
-        if self.utt_encoder.bidirectional:
+        if self.bidirectional:
             last_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=1)
         else:
             last_hidden = last_hidden[-1,:,:]
@@ -53,6 +54,11 @@ class ModelIAS(nn.Module):
         slots = self.slot_out(utt_encoded)
         # Compute intent logits
         intent = self.intent_out(last_hidden)
+        
+        # Apply dropout if specified
+        if self.apply_dropout:
+            utt_encoded = self.dropout(utt_encoded)
+            last_hidden = self.dropout(last_hidden)
         
         # Slot size: batch_size, seq_len, classes 
         slots = slots.permute(0,2,1) # We need this for computing the loss

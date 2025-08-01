@@ -6,13 +6,14 @@ config = {
     "batch_size_train": 128, #original 128
     "batch_size_dev": 64, #original 64
     "batch_size_test": 64, #original 64
-    "lr": 0.005,
+    "lr": 0.001,
     "hid_size": 200,
     "emb_size": 300,
     "dropout": 0.3,
     "clip": 5,
     "n_epochs": 100,
     "patience_init": 3,
+    "runs": 5 
 }
 
 if __name__ == "__main__":
@@ -117,48 +118,57 @@ if __name__ == "__main__":
             model_name = "model_ias_dropout.pt"
         else:
             print("Invalid choice. Defaulting to ModelIAS without bidirectional and dropout.")
-            bid_flag = False
+            bidirect_flag = False
             dropout_flag = False
         
-        model = build_model(config, out_slot, out_int, vocab_len, PAD_TOKEN, bidirect_flag, dropout_flag)
+        all_slot_f1s = []
+        all_intent_acc = []
+        for x in tqdm(range(0, config["runs"])): #multiple runs
         
-        model.apply(init_weights)
+            model = build_model(config, out_slot, out_int, vocab_len, PAD_TOKEN, bidirect_flag, dropout_flag)
+            
+            model.apply(init_weights)
 
-        optimizer = optim.Adam(model.parameters(), lr=config["lr"])
-        criterion_slots = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
-        criterion_intents = nn.CrossEntropyLoss() # Because we do not have the pad token
+            optimizer = optim.Adam(model.parameters(), lr=config["lr"])
+            criterion_slots = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
+            criterion_intents = nn.CrossEntropyLoss() # Because we do not have the pad token
 
 
-        losses_train = []
-        losses_dev = []
-        sampled_epochs = []
-        best_f1 = 0
-        for x in tqdm(range(1,config["n_epochs"])):
-            loss = train_loop(train_loader, optimizer, criterion_slots, criterion_intents, model, clip=config["clip"])
-            if x % 5 == 0: # We check the performance every 5 epochs
-                sampled_epochs.append(x)
-                losses_train.append(np.asarray(loss).mean())
-                results_dev, intent_res, loss_dev = eval_loop(dev_loader, criterion_slots, criterion_intents, model, lang)
-                losses_dev.append(np.asarray(loss_dev).mean())
-                
-                f1 = results_dev['total']['f']
-                # For decreasing the patience you can also use the average between slot f1 and intent accuracy
-                if f1 > best_f1:
-                    best_f1 = f1
-                    # Here you should save the model
+            losses_train = []
+            losses_dev = []
+            sampled_epochs = []
+            best_f1 = 0
+            for x in tqdm(range(1,config["n_epochs"])):
+                loss = train_loop(train_loader, optimizer, criterion_slots, criterion_intents, model, clip=config["clip"])
+                if x % 5 == 0: # We check the performance every 5 epochs
+                    sampled_epochs.append(x)
+                    losses_train.append(np.asarray(loss).mean())
+                    results_dev, intent_res, loss_dev = eval_loop(dev_loader, criterion_slots, criterion_intents, model, lang)
+                    losses_dev.append(np.asarray(loss_dev).mean())
                     
-                    save_model(model, optimizer, lang.word2id, lang.slot2id, lang.intent2id, x, "bin", model_name)
-                    print("New best model saved with F1: {:.4f}".format(f1))
-                    
-                    patience = 3
-                else:
-                    patience -= 1
-                if patience <= 0: # Early stopping with patience
-                    break # Not nice but it keeps the code clean
+                    f1 = results_dev['total']['f']
+                    # For decreasing the patience you can also use the average between slot f1 and intent accuracy
+                    if f1 > best_f1:
+                        best_f1 = f1
+                        # Here you should save the model
+                        save_model(model, optimizer, lang.word2id, lang.slot2id, lang.intent2id, x, "bin", model_name)
+                        print("New best model saved with F1: {:.4f}".format(f1))
+                        
+                        patience = 3
+                    else:
+                        patience -= 1
+                    if patience <= 0: # Early stopping with patience
+                        break # Not nice but it keeps the code clean
 
-        results_test, intent_test, _ = eval_loop(test_loader, criterion_slots, criterion_intents, model, lang)    
-        print('Slot F1: ', results_test['total']['f'])
-        print('Intent Accuracy:', intent_test['accuracy'])
+            results_test, intent_test, _ = eval_loop(test_loader, criterion_slots,
+                                                    criterion_intents, model, lang)
+            all_intent_acc.append(intent_test['accuracy'])
+            all_slot_f1s.append(results_test['total']['f'])
+            slot_f1s = np.asarray(all_slot_f1s)
+            intent_acc = np.asarray(all_intent_acc)
+            print('Slot F1', round(slot_f1s.mean(),3), '+-', round(slot_f1s.std(),3))
+            print('Intent Acc', round(intent_acc.mean(), 3), '+-', round(intent_acc.std(), 3))
+            print('Intent Acc', round(intent_acc.mean(), 3), '+-', round(slot_f1s.std(), 3))
     else:
         print("Invalid mode. Please enter 1 for training or 2 for testing.")
         exit(1)
