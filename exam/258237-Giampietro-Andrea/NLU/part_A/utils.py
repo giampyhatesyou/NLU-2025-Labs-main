@@ -5,6 +5,8 @@ import json
 import os
 from sklearn.model_selection import train_test_split
 from collections import Counter
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Device settings
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -128,8 +130,8 @@ def load_data(path):
         dataset = json.loads(f.read())
     return dataset
 
-# Creates validation raw data and final test raw data
-def get_dev(tmp_train_raw): #!! da rinominare
+# Create a dev set
+def dev_set(tmp_train_raw): #!! da rinominare
     labels = []
     inputs = []
     mini_train = []

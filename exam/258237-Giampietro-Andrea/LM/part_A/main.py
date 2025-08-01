@@ -26,7 +26,6 @@ if __name__ == "__main__":
         "clip": 5, # normalize the gradient if >5
         "n_epochs": 100,
         "patience": 3,
-        "mode":1 #1 for LSTM, 2 for LSTM with dropout, 3 for LSTM with AdamW
     }
     
     #input the mode you want to use
@@ -36,7 +35,7 @@ if __name__ == "__main__":
     # Load the dataset
     train_raw = read_file("exam/258237-Giampietro-Andrea/LM/dataset/ptb.train.txt")
     dev_raw = read_file("exam/258237-Giampietro-Andrea/LM/dataset/ptb.valid.txt")
-    test_raw = read_file("/LM/dataset/ptb.test.txt")
+    test_raw = read_file("exam/258237-Giampietro-Andrea/LM/dataset/ptb.test.txt")
     # Create the vocab
     vocab = get_vocab(train_raw, special_tokens=["<pad>", "<eos>"])
     lang = Lang(train_raw, ["<pad>", "<eos>"])
@@ -70,6 +69,8 @@ if __name__ == "__main__":
 
     if config["mode"] == 3:
         #AdamW
+        config["lr"] = 0.001  #changing lr for AdamW 
+        print("Using AdamW optimizer with lr:", config["lr"])
         optimizer = optim.AdamW(model.parameters(), lr=config["lr"])
     else:
         #SGD
@@ -110,5 +111,5 @@ if __name__ == "__main__":
     print('Test ppl: ', final_ppl)
     
     #store the model
-    path = 'model_bin/model_name.pt'
-    torch.save(model.state_dict(), path)
+"""    path = 'model_bin/model_name.pt'
+    torch.save(model.state_dict(), path)"""

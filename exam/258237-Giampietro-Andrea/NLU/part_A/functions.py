@@ -6,11 +6,18 @@ import torch.optim as optim
 import copy
 from conll import evaluate
 from sklearn.metrics import classification_report
+import os
 
 from conll import evaluate
 from sklearn.metrics import classification_report
 
 from model import *
+
+# Device
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+else:
+    device = torch.device("cpu") 
 
 def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=5):
     model.train()
@@ -103,3 +110,32 @@ def init_weights(mat):
                 torch.nn.init.uniform_(m.weight, -0.01, 0.01)
                 if m.bias != None:
                     m.bias.data.fill_(0.01)
+                    
+
+#save the model
+def save_model(model, optimizer, w2id, slot2id, intent2id, epoch, path, model_name):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    PATH = os.path.join("bin", model_name)
+    saving_object = {"epoch": epoch, 
+                    "model": model.state_dict(), 
+                    "optimizer": optimizer.state_dict(), 
+                    "w2id": w2id, 
+                    "slot2id": slot2id, 
+                    "intent2id": intent2id}
+    torch.save(saving_object, PATH)
+    
+    
+def build_model(config, out_slot, out_int, vocab_len, PAD_TOKEN, bidirectional=False, dropout=False):
+    return ModelIAS(
+        hid_size=config["hid_size"],
+        out_slot=out_slot,
+        out_int=out_int,
+        emb_size=config["emb_size"],
+        vocab_len=vocab_len,
+        dropout=config["dropout"],
+        bidirectional=bidirectional,
+        apply_dropout=dropout,
+        n_layer=1,
+        pad_index=PAD_TOKEN
+    ).to(device)
